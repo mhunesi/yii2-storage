@@ -720,9 +720,3 @@ $info = Yii::$app->fs->getWithMetadata('path/to/filename.ext', ['timestamp', 'mi
 echo $info['mimetype'];
 echo $info['timestamp'];
 ```
-
-## Donating
-
-Support this project and [others by creocoder](https://gratipay.com/creocoder/) via [gratipay](https://gratipay.com/creocoder/).
-
-[![Support via Gratipay](https://cdn.rawgit.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.svg)](https://gratipay.com/creocoder/)
