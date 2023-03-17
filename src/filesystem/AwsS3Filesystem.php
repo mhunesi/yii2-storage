@@ -5,6 +5,7 @@ namespace mhunesi\storage\filesystem;
 
 use Aws\S3\S3Client;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
+use League\Flysystem\Cached\CachedAdapter;
 use yii\base\InvalidConfigException;
 
 /**
@@ -125,6 +126,11 @@ class AwsS3Filesystem extends Filesystem
         if($this->replica){
             $adapter = $adapter->getSourceAdapter();
         }
+
+        if($adapter instanceof CachedAdapter){
+            $adapter = $adapter->getAdapter();
+        }
+
         $key = $adapter->applyPathPrefix($path);
         
         if($this->publicUrl){
