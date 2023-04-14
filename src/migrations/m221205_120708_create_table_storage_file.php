@@ -26,7 +26,7 @@ class m221205_120708_create_table_storage_file extends Migration
                 'file_size' => $this->integer()->defaultValue('0'),
                 'caption' => $this->string(),
                 'inline_disposition' => $this->boolean()->defaultValue('0'),
-                'parent_id' => $this->boolean()->defaultValue(null),
+                'parent_id' => $this->integer()->defaultValue(null),
                 'filter_identifier' => $this->string()->defaultValue(null),
                 'resolution_width' => $this->integer()->defaultValue(null),
                 'resolution_height' => $this->integer()->defaultValue(null),
