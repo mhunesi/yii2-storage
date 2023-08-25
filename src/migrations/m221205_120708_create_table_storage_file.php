@@ -40,9 +40,10 @@ class m221205_120708_create_table_storage_file extends Migration
 
         $this->createIndex('index_id_hash_name_mime_type_is_deleted', '{{%storage_file}}', ['id', 'hash_name', 'mime_type', 'is_deleted']);
         $this->createIndex('storage_file_index1', '{{%storage_file}}', ['folder_id', 'is_hidden', 'is_deleted', 'name_original']);
-		$this->createIndex('storage_file_index2', '{{%storage_file}}', ['is_deleted', 'id']);
-		$this->createIndex('storage_file_index3', '{{%storage_file}}', ['filter_identifier','parent_id','is_deleted']);
-		$this->createIndex('index_created_user_id', '{{%storage_file}}', ['created_by']);
+	$this->createIndex('storage_file_index2', '{{%storage_file}}', ['is_deleted', 'id']);
+	$this->createIndex('storage_file_index3', '{{%storage_file}}', ['filter_identifier','parent_id','is_deleted']);
+	$this->createIndex('storage_file_index4', '{{%storage_file}}', ['parent_id']);
+	$this->createIndex('index_created_user_id', '{{%storage_file}}', ['created_by']);
         $this->createIndex('index_updated_user_id', '{{%storage_file}}', ['updated_by']);
     }
 
