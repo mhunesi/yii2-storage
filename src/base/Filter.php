@@ -2,14 +2,16 @@
 
 namespace mhunesi\storage\base;
 
-use Imagine\Image\ImageInterface;
+use Yii;
+use yii\imagine\Image;
 use yii\helpers\Json;
 use yii\base\Exception;
 use yii\base\BaseObject;
+use Imagine\Image\ImageInterface;
+use mhunesi\storage\helpers\FileHelper;
 use mhunesi\storage\models\StorageEffect;
 use mhunesi\storage\models\StorageFilter;
 use mhunesi\storage\models\StorageFilterChain;
-use yii\imagine\Image;
 
 /**
  * Base class for all storage component filters.
@@ -80,7 +82,12 @@ abstract class Filter extends BaseObject implements FilterInterface
             $image = $this->applyFilter($image,$effectIdentifier,$effectParams);
         }
 
-        $filename = \Yii::getAlias('@runtime/storage/') .'temp_'.microtime().'.jpg';
+        $folderPath = Yii::getAlias('@runtime/storage/');
+
+        // Temp Directory
+        FileHelper::createDirectory($folderPath);
+
+        $filename = $folderPath .'temp_'.microtime().'.jpg';
 
         // auto rotate & save
         $image = Image::autoRotate($image)
