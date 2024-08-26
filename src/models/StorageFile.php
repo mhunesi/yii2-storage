@@ -184,7 +184,7 @@ class StorageFile extends \yii\db\ActiveRecord
 
 	public function getStream()
 	{
-		return $this->storage->fileSystem->readStream($this->name_new_compound);
+		return $this->storage->fileSystem->readStream($this->path);
 	}
 
 	public function getFileExists()
