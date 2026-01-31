@@ -3,8 +3,9 @@
 
 namespace mhunesi\storage\filesystem;
 
-use League\Flysystem\Sftp\SftpAdapter;
-use League\Flysystem\Util;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\PhpseclibV3\SftpAdapter;
+use League\Flysystem\PhpseclibV3\SftpConnectionProvider;
 use Yii;
 use yii\base\InvalidConfigException;
 
@@ -14,56 +15,19 @@ use yii\base\InvalidConfigException;
  */
 class SftpFilesystem extends Filesystem
 {
-    /**
-     * @var string
-     */
-    public $host;
-    /**
-     * @var string
-     */
-    public $port;
-    /**
-     * @var string
-     */
-    public $username;
-    /**
-     * @var string
-     */
-    public $password;
-    /**
-     * @var integer
-     */
-    public $timeout;
-    /**
-     * @var string
-     */
-    public $root;
-    /**
-     * @var string
-     */
-    public $privateKey;
-    /**
-     * @var integer
-     */
-    public $permPrivate;
-    /**
-     * @var integer
-     */
-    public $permPublic;
-    /**
-     * @var integer
-     */
-    public $directoryPerm;
+    public ?string $host = null;
+    public int $port = 22;
+    public ?string $username = null;
+    public ?string $password = null;
+    public int $timeout = 10;
+    public ?string $root = null;
+    public ?string $privateKey = null;
+    public ?int $permPrivate = null;
+    public ?int $permPublic = null;
+    public ?int $directoryPerm = null;
+    public ?string $publicUrl = null;
 
-    /**
-     * @var string
-     */
-    public $publicUrl;
-
-    /**
-     * @inheritdoc
-     */
-    public function init()
+    public function init() : void
     {
         if ($this->host === null) {
             throw new InvalidConfigException('The "host" property must be set.');
@@ -84,39 +48,22 @@ class SftpFilesystem extends Filesystem
         parent::init();
     }
 
-    /**
-     * @return SftpAdapter
-     */
-    protected function prepareAdapter()
+    protected function prepareAdapter() : FilesystemAdapter
     {
-        $config = [];
+        $provider = new SftpConnectionProvider(
+            host: $this->host,
+            username: $this->username,
+            password: $this->password,
+            privateKey: $this->privateKey,
+            port: $this->port,
+            timeout: $this->timeout
+        );
 
-        foreach ([
-            'host',
-            'port',
-            'username',
-            'password',
-            'timeout',
-            'root',
-            'privateKey',
-            'permPrivate',
-            'permPublic',
-            'directoryPerm',
-        ] as $name) {
-            if ($this->$name !== null) {
-                $config[$name] = $this->$name;
-            }
-        }
-
-        return new SftpAdapter($config);
+        return new SftpAdapter($provider, $this->root ?? '/');
     }
 
-    /**
-     * @param $path
-     * @return string
-     */
-    public function getUrl($path, $options = [])
+    public function getUrl($path, $options = []) : string
     {
-        return Util::normalizePath($this->publicUrl . DIRECTORY_SEPARATOR . $path);
+        return trim($this->publicUrl . '/' . $path, '/');
     }
 }

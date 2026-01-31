@@ -3,11 +3,9 @@
 namespace mhunesi\storage;
 
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\MountManager;
-use League\Flysystem\Replicate\ReplicateAdapter;
-use League\Flysystem\Util;
 use mhunesi\storage\base\Filter;
+use mhunesi\storage\helpers\Util;
 use mhunesi\storage\models\StorageFile;
 use mhunesi\storage\events\FileEvent;
 use mhunesi\storage\jobs\ImageFilterJob;
@@ -204,17 +202,6 @@ class Storage extends \yii\base\Component
 		}
 
 		foreach ($this->storages as $identifier => $storage) {
-
-			if (isset($storage['replica'])) {
-				if (is_string($storage['replica']) && isset($this->storages[$storage['replica']])) {
-					$storage['replica'] = Yii::createObject($this->storages[$storage['replica']]);
-				} elseif (is_array($storage['replica'])) {
-					$storage['replica'] = Yii::createObject($storage['replica']);
-				} else {
-					throw new InvalidConfigException("replica be string or array");
-				}
-			}
-
 			$this->_storages[$identifier] = Yii::createObject($storage);
 		}
 
@@ -277,6 +264,81 @@ class Storage extends \yii\base\Component
 	}
 
 	/**
+	 * @param string|resource $fileSource
+	 * @param $fileName
+	 * @param $folderId
+	 * @param bool $isHidden
+	 * @return false|StorageFile
+	 * @throws \League\Flysystem\FilesystemException
+	 * @throws \League\Flysystem\UnableToWriteFile
+	 */
+	public function addFile($fileSource, $fileName, $folderId = null, $isHidden = false, $visibility = 'private')
+	{
+		$pathInfo = Util::pathinfo($fileName);
+
+		$dirname = Util::normalizePath($pathInfo['dirname']);
+
+		$fileData = $this->ensureFileUpload($fileSource, $fileName);
+
+		$fileHash = FileHelper::md5sum($fileSource);
+
+		$newName = implode('.', [$fileData['secureFileName'] . '_' . $fileData['hashName'], $fileData['extension']]);
+
+		$stream = fopen($fileSource, 'r+');
+
+		if ($dirname !== "") {
+			$newPath = $dirname . DIRECTORY_SEPARATOR . $newName;
+		} else {
+			$newPath = $newName;
+		}
+
+		$this->_fs->writeStream($newPath, $stream, [
+			'visibility' => $visibility
+		]);
+		fclose($stream);
+
+		$model = new StorageFile();
+		$model->setAttributes([
+			'storage_key' => $this->currentStorageKey,
+			'name_original' => $pathInfo['basename'],
+			'name_new' => $fileData['secureFileName'],
+			'name_new_compound' => $newName,
+			'mime_type' => $fileData['mimeType'],
+			'extension' => $fileData['extension'],
+			'folder_id' => $folderId,
+			'hash_file' => $fileHash,
+			'hash_name' => $fileData['hashName'],
+			'is_hidden' => (bool)$isHidden,
+			'is_visibility' => (bool)$visibility,
+			'is_deleted' => false,
+			'file_size' => $fileData['fileSize'],
+			'path_prefix' => $this->_fs->hasProperty('prefix') ? $this->_fs->prefix : null,
+			'file_path' => $dirname,
+			'caption' => null,
+			'inline_disposition' => (int)$this->fileDefaultInlineDisposition,
+		]);
+
+		if ($model->validate()) {
+
+			if ($model->isImage) {
+				$resolution = FileHelper::getImageResolution($fileSource, false);
+				$model->resolution_height = $resolution['height'];
+				$model->resolution_width = $resolution['width'];
+			}
+
+			if ($model->save()) {
+				if ($model->isImage && $this->queueFilters && Yii::$app->get('queue', false)) {
+					$this->queueJobIds[] = Yii::$app->queue->push(new ImageFilterJob(['fileId' => $model->id, 'filterIdentifiers' => $this->queueFiltersList]));
+				}
+				$this->trigger(self::FILE_SAVE_EVENT, new FileEvent(['file' => $model]));
+				return $model;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * @param $filterId
 	 * @return Filter|Filter[]
 	 * @throws InvalidConfigException
@@ -307,92 +369,6 @@ class Storage extends \yii\base\Component
 		}
 
 		return $filter_id ? $items[$filter_id] : null;
-	}
-
-	/**
-	 * @param string|resource $fileSource
-	 * @param $fileName
-	 * @param $folderId
-	 * @param bool $isHidden
-	 * @return false|StorageFile
-	 * @throws Exception
-	 */
-	public function addFile($fileSource, $fileName, $folderId = null, $isHidden = false, $visibility = AdapterInterface::VISIBILITY_PUBLIC)
-	{
-		$pathInfo = Util::pathinfo($fileName);
-
-		$dirname = Util::normalizePath($pathInfo['dirname']);
-
-		$fileData = $this->ensureFileUpload($fileSource, $fileName);
-
-		$fileHash = FileHelper::md5sum($fileSource);
-
-		$newName = implode('.', [$fileData['secureFileName'] . '_' . $fileData['hashName'], $fileData['extension']]);
-
-		try {
-
-			$stream = fopen($fileSource, 'r+');
-
-			if ($dirname !== "") {
-				$newPath = $dirname . DIRECTORY_SEPARATOR . $newName;
-			} else {
-				$newPath = $newName;
-			}
-
-			$this->_fs->writeStream($newPath, $stream, [
-				'visibility' => $visibility
-			]);
-
-			fclose($stream);
-
-		} catch (\League\Flysystem\FilesystemException|\League\Flysystem\UnableToWriteFile|\Throwable $exception) {
-			return false;
-		}
-
-		$adapter = $this->_fs->getAdapter();
-
-		$adapter = $adapter instanceof ReplicateAdapter ? $adapter->getSourceAdapter() : $adapter;
-
-		$model = new StorageFile();
-
-		$model->setAttributes([
-			'storage_key' => $this->currentStorageKey,
-			'name_original' => $pathInfo['basename'],
-			'name_new' => $fileData['secureFileName'],
-			'name_new_compound' => $newName,
-			'mime_type' => $fileData['mimeType'],
-			'extension' => $fileData['extension'],
-			'folder_id' => $folderId,
-			'hash_file' => $fileHash,
-			'hash_name' => $fileData['hashName'],
-			'is_hidden' => $isHidden ? true : false,
-			'is_visibility' => ($visibility === AdapterInterface::VISIBILITY_PUBLIC ? 0 : 1),
-			'is_deleted' => false,
-			'file_size' => $fileData['fileSize'],
-			'path_prefix' => $this->_fs->hasProperty('prefix') ? $this->_fs->prefix : null,
-			'file_path' => $dirname,
-			'caption' => null,
-			'inline_disposition' => (int)$this->fileDefaultInlineDisposition,
-		]);
-
-		if ($model->validate()) {
-
-			if ($model->isImage) {
-				$resolution = FileHelper::getImageResolution($fileSource, false);
-				$model->resolution_height = $resolution['height'];
-				$model->resolution_width = $resolution['width'];
-			}
-
-			if ($model->save()) {
-				if ($model->isImage && $this->queueFilters && Yii::$app->get('queue', false)) {
-					$this->queueJobIds[] = Yii::$app->queue->push(new ImageFilterJob(['fileId' => $model->id, 'filterIdentifiers' => $this->queueFiltersList]));
-				}
-				$this->trigger(self::FILE_SAVE_EVENT, new FileEvent(['file' => $model]));
-				return $model;
-			}
-		}
-
-		return false;
 	}
 
 	/**

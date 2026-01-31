@@ -4,72 +4,32 @@
 namespace mhunesi\storage\filesystem;
 
 use Aws\S3\S3Client;
-use League\Flysystem\AwsS3v3\AwsS3Adapter;
-use League\Flysystem\Cached\CachedAdapter;
+use League\Flysystem\PathPrefixer;
 use yii\base\InvalidConfigException;
+use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 
 /**
  * AwsS3Filesystem
  */
 class AwsS3Filesystem extends Filesystem
 {
-    /**
-     * @var string
-     */
-    public $key;
-    /**
-     * @var string
-     */
-    public $secret;
-    /**
-     * @var string
-     */
-    public $region;
-    /**
-     * @var string
-     */
-    public $baseUrl;
-    /**
-     * @var string
-     */
-    public $version;
-    /**
-     * @var string
-     */
-    public $bucket;
-    /**
-     * @var string|null
-     */
-    public $prefix;
-    /**
-     * @var bool
-     */
-    public $pathStyleEndpoint = false;
-    /**
-     * @var array
-     */
-    public $options = [];
-    /**
-     * @var bool
-     */
-    public $streamReads = false;
-    /**
-     * @var string
-     */
-    public $endpoint;
-    /**
-     * @var array|\Aws\CacheInterface|\Aws\Credentials\CredentialsInterface|bool|callable
-     */
-    public $credentials;
+    public ?string $key = null;
+    public ?string $secret = null;
+    public ?string $region = null;
+    public ?string $baseUrl = null;
+    public ?string $version = null;
+    public ?string $bucket = null;
+    public ?string $prefix = null;
+    public bool $pathStyleEndpoint = false;
+    public array $options = [];
+    public bool $streamReads = false;
+    public ?string $endpoint = null;
+    public mixed $credentials = null;
+    public ?string $publicUrl = null;
 
-    public $publicUrl = null;
+    private ?S3Client $_client = null;
 
-    private $_client;
-
-    /**
-     * @inheritdoc
-     */
-    public function init()
+    public function init() : void
     {
         if ($this->credentials === null) {
             if ($this->key === null) {
@@ -88,10 +48,7 @@ class AwsS3Filesystem extends Filesystem
         parent::init();
     }
 
-    /**
-     * @return AwsS3Adapter
-     */
-    protected function prepareAdapter()
+    protected function prepareAdapter() : AwsS3V3Adapter
     {
         $config = [];
 
@@ -117,40 +74,37 @@ class AwsS3Filesystem extends Filesystem
 
         $this->_client = new S3Client($config);
 
-        return new AwsS3Adapter($this->_client, $this->bucket, $this->prefix, $this->options, $this->streamReads);
+        return new AwsS3V3Adapter(
+			client: $this->_client,
+			bucket: $this->bucket,
+			prefix: $this->prefix,
+			options: $this->options,
+			streamReads: $this->streamReads);
     }
 
-    public function getUrl($path, $options = [])
+    public function getUrl($path, $options = []) : string
     {
-        $adapter = $this->getAdapter();
-        if($this->replica){
-            $adapter = $adapter->getSourceAdapter();
-        }
+		if($this->prefix){
+			$pathPrefixer = new PathPrefixer($this->prefix);
+			$path = $pathPrefixer->prefixPath($path);
+		}
 
-        if($adapter instanceof CachedAdapter){
-            $adapter = $adapter->getAdapter();
-        }
-
-        $key = $adapter->applyPathPrefix($path);
-        
         if($this->publicUrl){
-            return $this->publicUrl . DIRECTORY_SEPARATOR . $key;
+            return $this->publicUrl . DIRECTORY_SEPARATOR . $path;
         }
 
-        return $this->_client->getObjectUrl($this->bucket,$key);
+        return $this->_client->getObjectUrl($this->bucket,$path);
     }
 
-    public function getPresignedUrl($path, $time = '+10 minutes')
+    public function getPresignedUrl(string $path, string $time = '+10 minutes') : string
     {
-        // Get a command object from the client
         $command = $this->_client->getCommand('GetObject', [
             'Bucket' => $this->bucket,
             'Key'    => $path
         ]);
 
-        // Create a pre-signed URL for a request with duration of 10 miniutes
         $presignedRequest = $this->_client->createPresignedRequest($command, $time);
 
-        return $presignedRequest->getUri();
+        return (string) $presignedRequest->getUri();
     }
 }

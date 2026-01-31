@@ -12,8 +12,6 @@
 
 namespace mhunesi\storage\actions;
 
-use League\Flysystem\AdapterInterface;
-use League\Flysystem\Util;
 use mhunesi\storage\helpers\FileHelper;
 use mhunesi\storage\Storage;
 use Yii;
@@ -64,7 +62,7 @@ class FileUploadAction extends Action
             try {
 
                 if($this->path){
-                    $fileName =  Util::normalizePath($this->path . DIRECTORY_SEPARATOR . $file->name);
+                    $fileName = trim($this->path . DIRECTORY_SEPARATOR . $file->name, '/');
                 }else{
                     $fileName = $file->name;
                 }
