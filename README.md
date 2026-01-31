@@ -41,16 +41,7 @@ Once the extension is installed, simply use it in your code by  :
         'storages' => [
             'local' => [
                 'class' => '\mhunesi\storage\filesystem\LocalFilesystem',
-                'path' => '@app/web/uploads',
-                'cache' => 'cache',
-                'cacheKey' => 'filesystem_file',
-                //'replica' => 'minio',
-                'replica' => [
-                    'class' => '\mhunesi\storage\filesystem\LocalFilesystem',
-                    'path' => '@app/web/uploads2',
-                    'cache' => 'cache',
-                    'cacheKey' => 'filesystem_file_2',
-                ]
+                'path' => '@app/web/uploads'
             ],
             'aws' => [
                 'class' => 'mhunesi\storage\filesystem\AwsS3Filesystem',
@@ -60,14 +51,6 @@ Once the extension is installed, simply use it in your code by  :
                 'region' => 'eu-central-1',
                 // 'version' => 'latest',
                 'prefix' => 'wss',
-                'cache' => 'cache',
-                'cacheKey' => 'filesystem_aws',
-                'replica' => [
-                    'class' => '\mhunesi\storage\filesystem\LocalFilesystem',
-                    'path' => '@app/web/uploads2',
-                    'cache' => 'cache',
-                    'cacheKey' => 'filesystem_file_2',
-                ],
             ],
             'minio' => [
                 'class' => 'mhunesi\storage\filesystem\AwsS3Filesystem',
@@ -79,9 +62,7 @@ Once the extension is installed, simply use it in your code by  :
                 // 'baseUrl' => 'your-base-url',
                 'prefix' => 'subfolder',
                 // 'options' => [],
-                'endpoint' => 'http://127.0.0.1:49160',
-                'cache' => 'cache',
-                'cacheKey' => 'filesystem_minio'
+                'endpoint' => 'http://127.0.0.1:49160'
             ],
             'ftp' => [
                 'class' => 'mhunesi\storage\filesystem\FtpFilesystem',
@@ -89,8 +70,6 @@ Once the extension is installed, simply use it in your code by  :
                 'port' => 21,
                 'username' => 'ftp_username',
                 'password' => 'ftp_password',
-                'cache' => 'cache',
-                'cacheKey' => 'filesystem_ftp1',
                 // 'ssl' => true,
                 // 'timeout' => 60,
                 'root' => '/rootPath',
@@ -99,7 +78,6 @@ Once the extension is installed, simply use it in your code by  :
                 // 'permPublic' => 0744,
                 // 'passive' => false,
                 // 'transferMode' => FTP_TEXT,
-                'replica' => 'local',
             ],
         ]
     ]    
@@ -141,7 +119,7 @@ Upload & Download Action
                 'path' => 'folder/folder',
                 'folder' => 1,
                 'hidden' => true,
-                'visibility' => AdapterInterface::VISIBILITY_PUBLIC 
+                'visibility' => 'public' // 'private' 
             ],
         ];
     }
