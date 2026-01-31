@@ -31,7 +31,7 @@ class FileUploadAction extends Action
 
     public $hidden = false;
 
-    public $visibility = AdapterInterface::VISIBILITY_PUBLIC;
+    public $visibility = 'public';
 
     public $use_strict = false;
 

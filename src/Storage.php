@@ -437,7 +437,7 @@ class Storage extends \yii\base\Component
 			$stream = fopen($tempFile, 'r+');
 
 			$this->_fs->writeStream($model->path, $stream, [
-				'visibility' => $file->is_visibility == 0 ? AdapterInterface::VISIBILITY_PUBLIC : AdapterInterface::VISIBILITY_PRIVATE
+				'visibility' => $file->is_visibility == 0 ? 'public' : 'private'
 			]);
 
 			fclose($stream);

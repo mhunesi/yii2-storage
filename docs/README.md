@@ -493,7 +493,7 @@ return [
         'fsID' => [
             //...
             'config' => [
-                'visibility' => \League\Flysystem\AdapterInterface::VISIBILITY_PRIVATE,
+                'visibility' => 'private',
             ],
         ],
     ],
@@ -649,7 +649,7 @@ Visibility is the abstraction of file permissions across multiple platforms. Vis
 use League\Flysystem\AdapterInterface;
 
 Yii::$app->fs->write('filename.ext', 'contents', [
-    'visibility' => AdapterInterface::VISIBILITY_PRIVATE
+    'visibility' => 'private'
 ]);
 ```
 
@@ -658,8 +658,8 @@ You can also change and check visibility of existing files
 ```php
 use League\Flysystem\AdapterInterface;
 
-if (Yii::$app->fs->getVisibility('filename.ext') === AdapterInterface::VISIBILITY_PRIVATE) {
-    Yii::$app->fs->setVisibility('filename.ext', AdapterInterface::VISIBILITY_PUBLIC);
+if (Yii::$app->fs->getVisibility('filename.ext') === 'private') {
+    Yii::$app->fs->setVisibility('filename.ext', 'public');
 }
 ```
 
