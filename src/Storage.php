@@ -272,7 +272,7 @@ class Storage extends \yii\base\Component
 	 * @throws \League\Flysystem\FilesystemException
 	 * @throws \League\Flysystem\UnableToWriteFile
 	 */
-	public function addFile($fileSource, $fileName, $folderId = null, $isHidden = false, $visibility = 'private')
+	public function addFile($fileSource, $fileName, $folderId = null, $isHidden = false, $visibility = 'public')
 	{
 		$pathInfo = Util::pathinfo($fileName);
 
