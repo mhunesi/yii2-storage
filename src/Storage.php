@@ -309,7 +309,7 @@ class Storage extends \yii\base\Component
 			'hash_file' => $fileHash,
 			'hash_name' => $fileData['hashName'],
 			'is_hidden' => (bool)$isHidden,
-			'is_visibility' => (bool)$visibility,
+			'is_visibility' => $visibility !== 'public',
 			'is_deleted' => false,
 			'file_size' => $fileData['fileSize'],
 			'path_prefix' => $this->_fs->hasProperty('prefix') ? $this->_fs->prefix : null,
