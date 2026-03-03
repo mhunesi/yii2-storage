@@ -7,7 +7,6 @@ use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use mhunesi\storage\helpers\FileHelper;
-use mhunesi\storage\models\StorageImage;
 
 /**
  * This is the model class for table "storage_file".
@@ -143,18 +142,19 @@ class StorageFile extends \yii\db\ActiveRecord
 	{
 		if ($this->beforeDelete()) {
 
-			if (!$this->storage->fileSystem->delete($this->path)) {
-				Yii::error("Unable to remove file from filesystem: " . $this->path);
-			} else {
-				if (!$this->parent_id) {
-					foreach ($this->children as $child) {
-						$child->delete();
-					}
-				}
-
-				$this->updateAttributes(['is_deleted' => true]);
+			try{
+				$this->storage->fileSystem->delete($this->path);
+			} catch (\Throwable $e){
+				Yii::warning("Unable to remove file from filesystem: " . $this->path);
 			}
 
+			if (!$this->parent_id) {
+				foreach ($this->children as $child) {
+					$child->delete();
+				}
+			}
+
+			$this->updateAttributes(['is_deleted' => true]);
 			$this->afterDelete();
 			return true;
 		}
